@@ -13,23 +13,41 @@ namespace BancoSENAIAPI.Controllers
             {
                 NumeroCarteira = 1,
                 NomeCarteira = "Agro",
-                ApetiteCarteira = 1000000
+                ApetiteCarteira = 100000
             },
 
             new Carteira
             {
                 NumeroCarteira = 2,
                 NomeCarteira = "Varejo",
-                ApetiteCarteira = 1500000
+                ApetiteCarteira = 15000000
             },
 
             new Carteira
             {
                 NumeroCarteira = 3,
                 NomeCarteira = "Atacado",
-                ApetiteCarteira = 2000000
+                ApetiteCarteira = 20000000
             }
+
+
         };
+
+        // GET: api/Carteira/1
+        [HttpGet("{numeroCarteira}")]
+        public IActionResult Get(int numeroCarteira)
+        {
+            var carteira = _carteiras.FirstOrDefault(
+                c => c.NumeroCarteira == numeroCarteira
+            );
+
+            if (carteira == null)
+            {
+                return NotFound("Carteira não encontrada.");
+            }
+
+            return Ok(carteira);
+        }
 
         [HttpGet]
         public IActionResult ListarTodas()
@@ -88,14 +106,6 @@ namespace BancoSENAIAPI.Controllers
 
             return Ok(new { message = "Carteira apagada com sucesso." });
         }
-
-
-
-
-
-
-
-
     }
-
+        
 }

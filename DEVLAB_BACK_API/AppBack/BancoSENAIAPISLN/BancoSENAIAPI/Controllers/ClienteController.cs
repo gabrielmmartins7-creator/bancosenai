@@ -1,5 +1,4 @@
 ﻿using BancoSENAIAPI.Models;
-using BancoSENAIAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BancoSENAIAPI.Controllers
@@ -8,19 +7,14 @@ namespace BancoSENAIAPI.Controllers
     [Route("api/v1/[controller]")]
     public class ClienteController : ControllerBase
     {
-        private readonly ClienteService _service;
-
-        public ClienteController()
-        {
-            _service = new ClienteService();
-        }
+        private static List<Cliente> _clientes = new List<Cliente> { };
 
         [HttpGet]
         public IActionResult ListarTodos()
         {
-            return Ok(_service.ListarTodos());
+            return Ok(_clientes);
         }
-
+/*
         [HttpPost]
         public IActionResult Cadastrar([FromBody] Cliente cliente)
         {
@@ -40,6 +34,6 @@ namespace BancoSENAIAPI.Controllers
             }
 
             return Ok(cliente);
-        }
+        }*/
     }
 }
