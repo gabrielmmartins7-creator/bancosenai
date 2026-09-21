@@ -124,7 +124,12 @@ async function excluirDocumento(id) {
 
         alert("Documento excluído com sucesso.");
 
-        listarDocumentos();
+        const codigoCliente =
+            document.getElementById('codigoClienteBusca').value;
+
+        if (codigoCliente) {
+            listarDocumentos();
+        }
 
     } else {
 
