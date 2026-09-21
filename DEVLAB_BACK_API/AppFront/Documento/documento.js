@@ -31,6 +31,9 @@ async function enviarDocumento() {
         document.getElementById('codigoCliente').value = '';
         document.getElementById('arquivo').value = '';
 
+        document.getElementById('codigoClienteBusca').value = codigoCliente;
+        listarDocumentos();
+
     } else {
 
         const erro = await response.json();
