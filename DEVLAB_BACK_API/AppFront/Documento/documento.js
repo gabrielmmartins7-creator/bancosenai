@@ -103,10 +103,9 @@ async function listarDocumentos() {
 
 function baixarDocumento(id) {
 
-    window.open(
-        `${URL_API}/download/${id}`,
-        '_blank'
-    );
+    const urlDownload = `${URL_API}/download/${id}`;
+
+    window.open(urlDownload, '_blank');
 }
 
 
