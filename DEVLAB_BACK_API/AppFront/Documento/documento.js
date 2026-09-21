@@ -31,6 +31,9 @@ async function enviarDocumento() {
         document.getElementById('codigoCliente').value = '';
         document.getElementById('arquivo').value = '';
 
+        document.getElementById('codigoClienteBusca').value = codigoCliente;
+        listarDocumentos();
+
     } else {
 
         const erro = await response.json();
@@ -69,6 +72,11 @@ async function listarDocumentos() {
 
     const documentos = await response.json();
 
+    if (documentos.length === 0) {
+        alert("Nenhum documento encontrado para este cliente.");
+        return;
+    }
+
     documentos.forEach(documento => {
 
         tabela.innerHTML += `
@@ -95,10 +103,9 @@ async function listarDocumentos() {
 
 function baixarDocumento(id) {
 
-    window.open(
-        `${URL_API}/download/${id}`,
-        '_blank'
-    );
+    const urlDownload = `${URL_API}/download/${id}`;
+
+    window.open(urlDownload, '_blank');
 }
 
 
@@ -117,7 +124,12 @@ async function excluirDocumento(id) {
 
         alert("Documento excluído com sucesso.");
 
-        listarDocumentos();
+        const codigoCliente =
+            document.getElementById('codigoClienteBusca').value;
+
+        if (codigoCliente) {
+            listarDocumentos();
+        }
 
     } else {
 
