@@ -72,6 +72,11 @@ async function listarDocumentos() {
 
     const documentos = await response.json();
 
+    if (documentos.length === 0) {
+        alert("Nenhum documento encontrado para este cliente.");
+        return;
+    }
+
     documentos.forEach(documento => {
 
         tabela.innerHTML += `
