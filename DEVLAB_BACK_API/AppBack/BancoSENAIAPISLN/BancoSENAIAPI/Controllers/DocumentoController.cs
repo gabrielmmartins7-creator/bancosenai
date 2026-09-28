@@ -1,29 +1,29 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using BancoSENAIAPI.Data;
+using BancoSENAIAPI.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BancoSENAIAPI.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
-    public class DocumentoController : Controller
+    public class DocumentoController : ControllerBase
     {
+        private readonly AppDbContext _context;
+
         private readonly string _caminhoRaiz = Path.Combine(
             Directory.GetCurrentDirectory(), "ClienteArquivos"
         );
-
-        private static List<Models.DocumentoMetadado> _documentosMetadados =
-            new List<Models.DocumentoMetadado>();
-
-        private static int _nextId = 1;
 
         private const long tamanhoMaximo = 2 * 1024 * 1024;
 
         private readonly string[] _extensoesPermitidas =
             { ".pdf", ".jpg", ".png" };
 
-
-        // ==========================================
-        // UPLOAD
-        // ==========================================
+        public DocumentoController(AppDbContext context)
+        {
+            _context = context;
+        }
 
         [HttpPost("upload/{codigoCliente}")]
         public async Task<IActionResult> AnexarArquivo(
@@ -46,14 +46,14 @@ namespace BancoSENAIAPI.Controllers
                 });
             }
 
-            string extensao1 =
+            string extensao =
                 Path.GetExtension(arquivo.FileName).ToLowerInvariant();
 
-            if (!_extensoesPermitidas.Contains(extensao1))
+            if (!_extensoesPermitidas.Contains(extensao))
             {
                 return BadRequest(new
                 {
-                    erro = $"Regra R06G Violada: Extensão '{extensao1}' inválida. " +
+                    erro = $"Regra R06G Violada: Extensão '{extensao}' inválida. " +
                            $"Extensões permitidas: {string.Join(", ", _extensoesPermitidas)}."
                 });
             }
@@ -67,8 +67,6 @@ namespace BancoSENAIAPI.Controllers
             {
                 Directory.CreateDirectory(pastaCliente);
             }
-
-            string extensao = Path.GetExtension(arquivo.FileName);
 
             string nomeOriginal =
                 Path.GetFileNameWithoutExtension(arquivo.FileName);
@@ -86,43 +84,48 @@ namespace BancoSENAIAPI.Controllers
                 await arquivo.CopyToAsync(stream);
             }
 
-            var documentoMetadados =
-                new Models.DocumentoMetadado
-                {
-                    Id = _nextId++,
-                    Name = nomeOriginal,
-                    Extensao = extensao,
-                    Caminho = caminhoFinal,
-                    CodigoCliente = codigoCliente
-                };
+            var documento = new DocumentoMetadado
+            {
+                Name = nomeOriginal,
+                Extensao = extensao,
+                Caminho = caminhoFinal,
+                CodigoCliente = codigoCliente
+            };
 
-            _documentosMetadados.Add(documentoMetadados);
+            await _context.Documentos.AddAsync(documento);
 
-            return Ok(new { mensagem = "Documento anexado com sucesso", arquivoSalvo = novoNome });
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                mensagem = "Documento anexado com sucesso",
+                arquivoSalvo = novoNome
+            });
         }
-
 
         [HttpGet("listar/{codigoCliente}")]
         public async Task<IActionResult> ListarArquivo(int codigoCliente)
         {
-            var documentos = _documentosMetadados
+            var documentos = await _context.Documentos
                 .Where(d => d.CodigoCliente == codigoCliente)
-                .ToList();
+                .ToListAsync();
 
             if (!documentos.Any())
             {
-                return NotFound(new { mensagem = $"Nenhum documento encontrado para o cliente {codigoCliente}." });
+                return NotFound(new
+                {
+                    mensagem = $"Nenhum documento encontrado para o cliente {codigoCliente}."
+                });
             }
 
             return Ok(documentos);
         }
 
-
         [HttpGet("download/{id}")]
-        public IActionResult Download(int id)
+        public async Task<IActionResult> Download(int id)
         {
-            var documento = _documentosMetadados
-                .FirstOrDefault(d => d.Id == id);
+            var documento = await _context.Documentos
+                .FirstOrDefaultAsync(d => d.Id == id);
 
             if (documento == null)
             {
@@ -137,7 +140,7 @@ namespace BancoSENAIAPI.Controllers
             }
 
             byte[] fileBytes =
-                System.IO.File.ReadAllBytes(documento.Caminho);
+                await System.IO.File.ReadAllBytesAsync(documento.Caminho);
 
             string nomeArquivo =
                 documento.Name + documento.Extensao;
@@ -150,10 +153,10 @@ namespace BancoSENAIAPI.Controllers
         }
 
         [HttpDelete("excluir/{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var documento = _documentosMetadados
-                .FirstOrDefault(d => d.Id == id);
+            var documento = await _context.Documentos
+                .FirstOrDefaultAsync(d => d.Id == id);
 
             if (documento == null)
             {
@@ -165,7 +168,9 @@ namespace BancoSENAIAPI.Controllers
                 System.IO.File.Delete(documento.Caminho);
             }
 
-            _documentosMetadados.Remove(documento);
+            _context.Documentos.Remove(documento);
+
+            await _context.SaveChangesAsync();
 
             return Ok(new
             {
@@ -173,9 +178,5 @@ namespace BancoSENAIAPI.Controllers
                     "Documento e arquivo físico excluídos com sucesso."
             });
         }
-
-
-
-
     }
 }
