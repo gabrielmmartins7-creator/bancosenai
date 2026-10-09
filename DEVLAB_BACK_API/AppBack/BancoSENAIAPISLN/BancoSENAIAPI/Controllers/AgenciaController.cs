@@ -6,6 +6,7 @@ namespace BancoSENAIAPI.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
+    [Authorize]
     public class AgenciaController : ControllerBase
     {
         private static List<Agencia> _agencias = new List<Agencia>

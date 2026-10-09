@@ -17,5 +17,7 @@ namespace BancoSENAIAPI.Data
         public DbSet<Cliente> Clientes => Set<Cliente>();
 
         public DbSet<DocumentoMetadado> Documentos => Set<DocumentoMetadado>();
+
+        public DbSet<Usuario> Usuarios => Set<Usuario>();
     }
 }

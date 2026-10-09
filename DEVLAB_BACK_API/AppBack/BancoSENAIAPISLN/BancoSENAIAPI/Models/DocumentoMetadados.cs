@@ -1,7 +1,11 @@
-﻿namespace BancoSENAIAPI.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace BancoSENAIAPI.Models
 {
     public class DocumentoMetadados
     {
+        [Key]
+
         public int Id { get; set; }
 
         public string Nome { get; set; }
