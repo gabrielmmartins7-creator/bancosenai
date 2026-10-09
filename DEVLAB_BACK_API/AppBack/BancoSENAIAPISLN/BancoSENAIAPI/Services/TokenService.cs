@@ -21,7 +21,7 @@ namespace BancoSENAIAPI.Services
             var chave = jwtSection["Key"]!;
             var minutos = int.Parse(jwtSection["ExpiraMinutos"] ?? "60");
             var expiraEm = DateTime.UtcNow.AddMinutes(minutos);
-
+            
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, usuario.NomeUsuario),
