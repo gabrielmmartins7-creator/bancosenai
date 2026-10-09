@@ -1,120 +1,81 @@
-﻿using BancoSENAIAPI.Data;
-using BancoSENAIAPI.Models;
+﻿using BancoSENAIAPI.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using BancoSENAIAPI.Services;
 
 namespace BancoSENAIAPI.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
-    public class ClienteController : ControllerBase
+    public class ClienteController : ControllerBase 
     {
-        private readonly AppDbContext _context;
-
-        public ClienteController(AppDbContext context)
+        private static List<Models.Cliente> _clientes = new List<Models.Cliente>()
         {
-            _context = context;
-        }
+            new Cliente() { Codigo = 1, Nome = "João Silva", Cpf = "11849572070", NumeroAgencia = 1001, Saldo = 1500.00m },
+        };
+        private static int _nextId = 2;
 
         [HttpGet]
-        public async Task<IActionResult> ListarTodos()
+        public IActionResult ListarTodos()
         {
-            var clientes = await _context.Clientes.ToListAsync();
-
-            return Ok(clientes);
-        }
-
-        [HttpGet("{codigo}")]
-        public async Task<IActionResult> BuscarPorCodigo(int codigo)
-        {
-            var cliente = await _context.Clientes
-                .FirstOrDefaultAsync(c => c.CodigoCliente == codigo);
-
-            if (cliente == null)
-            {
-                return NotFound(new
-                {
-                    message = "Cliente não encontrado."
-                });
-            }
-
-            return Ok(cliente);
+            return Ok(_clientes);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Cadastrar([FromBody] Cliente cliente)
+        public IActionResult Cadastrar([FromBody] Cliente novoCliente)
         {
-            var existe = await _context.Clientes
-                .AnyAsync(c => c.CodigoCliente == cliente.CodigoCliente);
+            if (string.IsNullOrWhiteSpace(novoCliente.Nome)) return BadRequest("O nome do cliente é obrigatório.");
+            if (string.IsNullOrWhiteSpace(novoCliente.Cpf)) return BadRequest("O CPF do cliente é obrigatório.");
 
-            if (existe)
-            {
-                return BadRequest(new
-                {
-                    message = "Este código de cliente já existe."
-                });
-            }
+            // Remove todos os caracteres não numéricos do CPF
+            string cpf = new string(novoCliente.Cpf.Where(char.IsDigit).ToArray());
 
-            await _context.Clientes.AddAsync(cliente);
+            if (!FormService.ValidarCPF(cpf)) return BadRequest("O CPF do cliente é inválido.");
 
-            await _context.SaveChangesAsync();
+            novoCliente.Cpf = cpf;
+            novoCliente.Codigo = _nextId++;
 
-            return Created("", cliente);
+            _clientes.Add(novoCliente);
+
+            // Retorna Status 201 Created conforme boas práticas REST
+            return Created("", novoCliente);
+        }
+
+        [HttpGet("{codigo}")]
+        public IActionResult ConsultarPorCodigo(int codigo)
+        {
+            var cliente = _clientes.FirstOrDefault(a => a.Codigo == codigo);
+
+            if (cliente == null)
+                return NotFound(new { message = "Cliente não encontrado." }); // Status 404
+
+            return Ok(cliente); // Status 200 OK
         }
 
         [HttpPut("{codigo}")]
-        public async Task<IActionResult> Atualizar(
-            int codigo,
-            [FromBody] Cliente clienteAtualizado)
+        public IActionResult Alterar(int codigo, [FromBody] Cliente clienteAtualizado)
         {
-            var cliente = await _context.Clientes
-                .FirstOrDefaultAsync(c => c.CodigoCliente == codigo);
+            var clienteExistente = _clientes.FirstOrDefault(a => a.Codigo == codigo);
 
-            if (cliente == null)
-            {
-                return NotFound(new
-                {
-                    message = "Cliente não encontrado."
-                });
-            }
+            if (clienteExistente == null) return NotFound(new { message = "Cliente não encontrado" });
 
-            cliente.NomeCliente = clienteAtualizado.NomeCliente;
-            cliente.CPF = clienteAtualizado.CPF;
-            cliente.NumeroAgencia = clienteAtualizado.NumeroAgencia;
-            cliente.SaldoTotal = clienteAtualizado.SaldoTotal;
-            cliente.DataNascimento = clienteAtualizado.DataNascimento;
-            cliente.Sexo = clienteAtualizado.Sexo;
-            cliente.Endereco = clienteAtualizado.Endereco;
-            cliente.Cidade = clienteAtualizado.Cidade;
-            cliente.Estado = clienteAtualizado.Estado;
+            clienteExistente.Nome = clienteAtualizado.Nome;
+            clienteExistente.Cpf = clienteAtualizado.Cpf;
+            clienteExistente.NumeroAgencia = clienteAtualizado.NumeroAgencia;
+            clienteExistente.Saldo = clienteAtualizado.Saldo;
 
-            await _context.SaveChangesAsync();
-
-            return Ok(cliente);
+            // Retorna Status 204 No Content para atualizações bem-sucedidas
+            return NoContent();
         }
 
         [HttpDelete("{codigo}")]
-        public async Task<IActionResult> Apagar(int codigo)
+        public IActionResult Excluir(int codigo)
         {
-            var cliente = await _context.Clientes
-                .FirstOrDefaultAsync(c => c.CodigoCliente == codigo);
+            var cliente = _clientes.FirstOrDefault(c => c.Codigo == codigo);
 
-            if (cliente == null)
-            {
-                return NotFound(new
-                {
-                    message = "Cliente não encontrado."
-                });
-            }
+            if (cliente == null) return NotFound(new { message = "Cliente não encontrado." });
 
-            _context.Clientes.Remove(cliente);
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                message = "Cliente apagado com sucesso."
-            });
+            _clientes.Remove(cliente);
+            return Ok(new { message = "Cliente excluído com sucesso." }); // Status 200
         }
     }
 }
